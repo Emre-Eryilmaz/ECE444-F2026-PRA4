@@ -177,19 +177,19 @@
               </div>
             </fieldset>
 
-            <fieldset class="field">
+            <div class="field">
+              <label for="partner">Preferred debate partner?</label>
+              <span class="hint">Optional — leave blank and we’ll pair you up with someone!</span>
+              <input id="partner" name="Preferred debate partner?" type="text" placeholder="Optional partner name">
+            </div>
+
+            <fieldset class="field" id="pro-am-field" hidden disabled>
               <legend>Would you be interested in a Pro-Am? (A Pro is partnered with a Nov) <span class="required" aria-hidden="true">*</span></legend>
               <div class="choice-grid">
-                <label class="choice"><input type="radio" name="Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)" value="Yes" required><span>Yes</span></label>
+                <label class="choice"><input type="radio" name="Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)" value="Yes"><span>Yes</span></label>
                 <label class="choice"><input type="radio" name="Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)" value="No"><span>No</span></label>
               </div>
             </fieldset>
-
-            <div class="field">
-              <label for="partner">Preferred debate partner? <span class="required" aria-hidden="true">*</span></label>
-              <span class="hint">N/A — we’ll pair you up with someone!</span>
-              <input id="partner" name="Preferred debate partner?" type="text" placeholder="Name or N/A" required>
-            </div>
 
             <div class="field">
               <label for="scratch">Is there anyone you wish to scratch from your room?</label>
@@ -263,6 +263,9 @@
       const result = document.querySelector('#result');
       const answerList = document.querySelector('#answer-list');
       const toast = document.querySelector('#toast');
+      const partner = document.querySelector('#partner');
+      const proAmField = document.querySelector('#pro-am-field');
+      const proAmOptions = proAmField.querySelectorAll('input[type="radio"]');
       let currentAnswers = [];
       let toastTimer;
 
@@ -273,6 +276,19 @@
         toastTimer = setTimeout(() => toast.classList.remove('show'), 2400);
       }
 
+      function updateProAmVisibility() {
+        const role = form.querySelector('input[name="Debate or judge?"]:checked')?.value;
+        const showProAm = (role === 'Debate' || role === 'Either') && partner.value.trim() === '';
+        proAmField.hidden = !showProAm;
+        proAmField.disabled = !showProAm;
+        proAmOptions[0].required = showProAm;
+        if (!showProAm) proAmOptions.forEach(option => { option.checked = false; });
+      }
+
+      updateProAmVisibility();
+      form.addEventListener('input', updateProAmVisibility);
+      form.addEventListener('change', updateProAmVisibility);
+
       function getAnswers() {
         const data = new FormData(form);
         return [
@@ -280,7 +296,7 @@
           ['First, Last Name + an emoji of your choice 6️⃣7️⃣', data.get('First, Last Name + an emoji of your choice 6️⃣7️⃣')],
           ['Debate or judge?', data.get('Debate or judge?')],
           ['Level of experience?', data.get('Level of experience?')],
-          ['Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)', data.get('Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)')],
+          ['Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)', proAmField.hidden ? 'Not applicable' : data.get('Would you be interested in a Pro-Am? (A Pro is partnered with a Nov)')],
           ['Preferred debate partner?', data.get('Preferred debate partner?')],
           ['Is there anyone you wish to scratch from your room?', data.get('Is there anyone you wish to scratch from your room?')],
           ['Do you have a special slotting preference?', data.get('Do you have a special slotting preference?')],
@@ -314,6 +330,7 @@
       form.addEventListener('reset', () => {
         result.classList.remove('is-visible');
         currentAnswers = [];
+        queueMicrotask(updateProAmVisibility);
       });
 
       document.querySelector('#copy-button').addEventListener('click', async () => {
